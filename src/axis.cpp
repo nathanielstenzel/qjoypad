@@ -220,9 +220,11 @@ void Axis::jsevent( int value ) {
         state = (value + JOYMAX) / 2;
     //set isOn, deal with state changing.
     //if was on but now should be off:
+
     if (isOn && abs(state) <= dZone) {
         isOn = false;
-        if (gradient || (interpretation == ZeroOne)) {
+        if (gradient || ((interpretation == ZeroOne) && (mode != Keyboard))) {
+            //"mode > Keyboard""  might be easier but do we want that for absolute mode?
             duration = 0;
             release();
             timer.stop();
@@ -233,7 +235,8 @@ void Axis::jsevent( int value ) {
     //if was off but now should be on:
     else if (!isOn && abs(state) >= dZone) {
         isOn = true;
-        if (gradient || (interpretation == ZeroOne)) {
+        if (gradient || ((interpretation == ZeroOne) && (mode != Keyboard))) {
+            //"mode > Keyboard""  might be easier but do we want that for absolute mode?
             duration = (abs(state) * FREQ) / JOYMAX;
             connect(&timer, SIGNAL(timeout()), this, SLOT(timerCalled()));
             timer.start(MSEC);
@@ -241,9 +244,10 @@ void Axis::jsevent( int value ) {
     }
     //otherwise, state doesn't change! Don't touch it.
     else return; //this line would hurt ZeroOne without the timer that was previously only used by gradient
-    //We never even get here
+    //We never even get here and if we did, the feedback on the gui would not happen
     //gradient will trigger movement on its own via timer().
     //non-gradient needs to be told to move.
+
     if (!gradient) {
         move(isOn);
     }
