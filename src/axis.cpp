@@ -41,7 +41,7 @@ bool Axis::read( QTextStream &stream ) {
     float fval;
     //step through each word, check if it's a token we recognize
     for ( QStringList::Iterator it = words.begin(); it != words.end(); ++it ) {
-        if (*it == "maxspeed") {
+        if (*it == "maxSpeed") {
             ++it; //move to the next word, which should be the maximum speed.
             //if no value was given, there's an error in the file, stop reading.
             if (it == words.end()) return false;
@@ -120,7 +120,7 @@ bool Axis::read( QTextStream &stream ) {
             else return false;
         }
         //the rest of the options are keywords without integers
-        else if (*it == "zeroone") {
+        else if (*it == "ZeroOne") {
 	    interpretation = ZeroOne;
             gradient = false;
             absolute = false;
@@ -222,7 +222,7 @@ void Axis::jsevent( int value ) {
     //if was on but now should be off:
     if (isOn && abs(state) <= dZone) {
         isOn = false;
-        if (gradient) {
+        if (gradient || (interpretation == ZeroOne)) {
             duration = 0;
             release();
             timer.stop();
@@ -233,15 +233,15 @@ void Axis::jsevent( int value ) {
     //if was off but now should be on:
     else if (!isOn && abs(state) >= dZone) {
         isOn = true;
-        if (gradient) {
+        if (gradient || (interpretation == ZeroOne)) {
             duration = (abs(state) * FREQ) / JOYMAX;
             connect(&timer, SIGNAL(timeout()), this, SLOT(timerCalled()));
             timer.start(MSEC);
         }
     }
     //otherwise, state doesn't change! Don't touch it.
-    else return;
-
+    else return; //this line would hurt ZeroOne without the timer that was previously only used by gradient
+    //We never even get here
     //gradient will trigger movement on its own via timer().
     //non-gradient needs to be told to move.
     if (!gradient) {
@@ -437,6 +437,8 @@ void Axis::move( bool press ) {
  		else dist = maxSpeed;
  
  		e.type = absolute ? FakeEvent::MouseMoveAbsolute : FakeEvent::MouseMove;
+        //go the right direction for ZeroOne mode
+        if ((interpretation == ZeroOne) && (state < 0)) dist = -dist;
  		if (mode == MousePosVert) {
  			e.move.x = 0;
  			e.move.y = dist;
